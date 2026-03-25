@@ -1,0 +1,22 @@
+DROP TABLE IF EXISTS count_doc_term; 
+CREATE TABLE count_doc_term (document_id STRING, term STRING, term_count INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' STORED AS TEXTFILE;  
+LOAD DATA INPATH 's3://4202648-5330-s25/lab5/data/term-count-doc-and-term' INTO TABLE count_doc_term;
+
+
+DROP TABLE IF EXISTS count_doc;
+CREATE TABLE count_doc (document_id STRING,doc_count INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' STORED AS TEXTFILE;
+LOAD DATA INPATH 's3://4202648-5330-s25/lab5/data/term-count-doc' INTO TABLE count_doc;
+
+
+DROP TABLE IF EXISTS freq_doc;
+CREATE TABLE freq_doc (term STRING,doc_freq INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' STORED AS TEXTFILE;
+LOAD DATA INPATH 's3://4202648-5330-s25/lab5/data/document-frequency' INTO TABLE freq_doc;
+
+
+DROP TABLE IF EXISTS tfidf;
+CREATE TABLE tfidf AS SELECT tc.document_id AS document_id, tc.term AS term, ((tc.term_count / dc.doc_count) / df.doc_freq) * 1000000 AS tfidf_score FROM count_doc_term tc JOIN count_doc dc ON tc.document_id = dc.document_id JOIN freq_doc df ON tc.term = df.term;
+
+INSERT OVERWRITE DIRECTORY 's3://4202648-5330-s25/lab5/data/tfidf' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE SELECT * FROM tfidf;
+
+
+
